@@ -1,62 +1,96 @@
 # main.py
-from fastapi import FastAPI, HTTPException
+import time
+import random
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from litellm import completion
-import time
 from dotenv import load_dotenv
 
-# 1. FastAPI 앱 생성
+# 우리가 만든 모듈 가져오기
+import config
+import logger
+
+load_dotenv()
+
 app = FastAPI(
     title="PrismOps Gateway",
-    description="LLM A/B Testing & Routing Gateway",
-    version="0.1.0"
+    description="A/B Testing Router for LLMs",
+    version="0.2.0"  # 버전 업!
 )
 
 
-# 2. 데이터 모델 정의 (요청/응답 형식을 미리 약속함)
 class ChatRequest(BaseModel):
-    model: str = "ollama/gemma:7b"  # 기본값 설정
     message: str
 
 
 class ChatResponse(BaseModel):
     reply: str
-    model_used: str
+    model: str
     latency: float
 
 
-# 3. 헬스 체크용 엔드포인트 (서버 살아있니?)
 @app.get("/")
 async def health_check():
-    return {"status": "ok", "service": "PrismOps Gateway"}
+    return {"status": "ok", "mode": "A/B Routing"}
 
 
-# 4. 채팅 엔드포인트 (핵심 기능!)
 @app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
+async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
+    """
+    [A/B 라우팅 로직]
+    1. 50% 확률로 Model A(Local) 또는 Model B(Cloud) 선택
+    2. 선택된 모델로 추론 실행
+    3. 결과 반환 및 비동기 로그 저장
+    """
     start_time = time.time()
 
-    print(f"📥 요청 수신: {request.model} / 내용: {request.message}")
+    # 🎲 1. 라우팅 결정 (0.0 ~ 1.0 사이의 랜덤 숫자 뽑기)
+    if random.random() < config.ROUTING_RATIO:
+        selected_model = config.MODEL_B  # Cloud
+        tag = "Cloud(B)"
+    else:
+        selected_model = config.MODEL_A  # Local
+        tag = "Local(A)"
+
+    print(f"🔀 [Router] {tag} 선택됨 -> {selected_model}")
 
     try:
-        # LiteLLM으로 AI에게 질문 던지기
+        # 🤖 2. 모델 호출
         response = completion(
-            model=request.model,
-            messages=[{"role": "user", "content": request.message}],
-            api_base="http://localhost:11434"
+            model=selected_model,
+            messages=[{"role": "user", "content": request.message}]
         )
 
-        # 답변 추출
         reply_text = response.choices[0].message.content
+
+        # ⏱️ 3. 시간 측정
         end_time = time.time()
-        process_time = round(end_time - start_time, 2)
+        latency = round(end_time - start_time, 2)
+
+        # 📝 4. 비동기 로그 저장 예약 (사용자는 기다리지 않음!)
+        log_data = {
+            "user_message": request.message,
+            "reply_snippet": reply_text[:30] + "...",  # 답변 앞부분만 저장
+            "model": selected_model,
+            "latency": latency,
+            "status": "success"
+        }
+        # 이 함수는 return이 끝난 뒤 백그라운드에서 실행됨
+        background_tasks.add_task(logger.log_transaction, log_data)
 
         return ChatResponse(
             reply=reply_text,
-            model_used=request.model,
-            latency=process_time
+            model=selected_model,
+            latency=latency
         )
 
     except Exception as e:
-        # 에러 나면 500 에러 반환
+        # 에러 발생 시에도 로그는 남겨야 함 (Error Log)
+        error_data = {
+            "user_message": request.message,
+            "model": selected_model,
+            "error": str(e),
+            "status": "failed"
+        }
+        background_tasks.add_task(logger.log_transaction, error_data)
         raise HTTPException(status_code=500, detail=str(e))
