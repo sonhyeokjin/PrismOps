@@ -1,0 +1,8 @@
+# .dockerignore
+__pycache__
+venv/
+.git/
+.gitignore
+.env
+*.jsonl
+*.log
