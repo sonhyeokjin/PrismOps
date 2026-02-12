@@ -4,3 +4,4 @@ litellm
 python-dotenv
 prometheus-fastapi-instrumentator
 requests
+streamlit

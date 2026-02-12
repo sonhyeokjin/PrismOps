@@ -56,7 +56,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
 
     print(f"🔀 [Router] {tag} 선택됨 -> {selected_model}")
 
-    # [Fix Issue #6] 모델 타입에 따른 API 주소 분기 처리
+    # 모델 타입에 따른 API 주소 분기 처리
     # 기본값은 None으로 설정 (OpenAI는 주소를 따로 설정할 필요 없음)
     custom_api_base = None
 
@@ -104,5 +104,5 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
         }
         background_tasks.add_task(logger.log_transaction, error_data)
 
-        print(f"❌ [Error] {str(e)}")
+        print(f"[Error] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
