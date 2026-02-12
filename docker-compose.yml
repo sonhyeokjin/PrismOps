@@ -1,5 +1,5 @@
 services:
-  # 1. 우리의 주인공 (FastAPI 서버)
+  # 1. FastAPI Server
   prism-app:
     build: .
     container_name: prism-gateway
@@ -45,6 +45,19 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin # 초기 비번 설정
     depends_on:
       - prometheus
+    networks:
+      - prism-network
+
+  # 5. FrontEnd Service
+  prism-frontend:
+    build: .
+    container_name: prism-frontend
+    # 이미지가 켜지면 실행할 명령어
+    command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501" # 웹 브라우저 접속 포트
+    depends_on:
+      - prism-app # 백엔드가 켜져야 나도 켜짐
     networks:
       - prism-network
 
