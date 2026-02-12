@@ -211,3 +211,4 @@ __marimo__/
 .idea/
 *.iml
 *.xml
+prism-key.pem
