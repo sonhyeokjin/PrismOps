@@ -1,0 +1,8 @@
+# .streamlit/config.toml
+
+[theme]
+primaryColor = "#4285f4"  # 구글 블루
+backgroundColor = "#ffffff" # 완전 흰색
+secondaryBackgroundColor = "#f0f4f9" # 연한 회색 (사이드바)
+textColor = "#1f1f1f" # 짙은 회색
+font = "sans serif"
