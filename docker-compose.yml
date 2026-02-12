@@ -9,6 +9,8 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - OLLAMA_API_BASE=http://host.docker.internal:11434
     depends_on:
       - redis # Redis가 켜져야 나도 켜짐
     networks:
