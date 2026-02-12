@@ -9,10 +9,13 @@ services:
       - .env
     environment:
       - OLLAMA_API_BASE=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      - redis # Redis가 켜져야 나도 켜짐
+      - redis
     networks:
       - prism-network
+
 
   # 2. 비동기 작업용 큐 (나중에 로그 저장용으로 사용)
   redis:
