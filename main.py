@@ -56,7 +56,8 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
     try:
         response = completion(
             model=selected_model,
-            messages=[{"role": "user", "content": request.message}]
+            messages=[{"role": "user", "content": request.message}],
+            api_base=config.OLLAMA_API_BASE
         )
 
         reply_text = response.choices[0].message.content
