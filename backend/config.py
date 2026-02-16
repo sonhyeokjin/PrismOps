@@ -19,7 +19,7 @@ MODEL_B = "gpt-4o-mini"
 ROUTING_RATIO = 0.5
 
 # === 로그 파일 경로 ===
-LOG_FILE_PATH = "traffic_log.jsonl"
+LOG_FILE_PATH = "../traffic_log.jsonl"
 
 # === Ollama 접속 주소 ===
 # 환경변수가 있으면 그걸 쓰고, 없으면 localhost(기본값)를 씁니다.

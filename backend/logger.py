@@ -1,7 +1,7 @@
 # logger.py
 import json
 from datetime import datetime
-import config
+from backend import config
 
 
 def log_transaction(data: dict):

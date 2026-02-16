@@ -1,10 +1,9 @@
-# prometheus/prometheus.yml
 global:
-  scrape_interval: 5s # 5초마다 데이터를 긁어감 (실시간성 확보)
+  scrape_interval: 5s # 5초마다 긁어오기 (실시간성 확보)
 
 scrape_configs:
-  - job_name: 'prism-gateway'
-    metrics_path: '/metrics' # 우리가 main.py에서 열어둔 경로
+  - job_name: 'fastapi-backend'
+    metrics_path: '/metrics'
     static_configs:
-      # 중요: 'localhost'가 아니라 Docker Compose의 서비스 이름('prism-app')을 씁니다.
-      - targets: ['prism-app:8000']
+      # Docker Network 내부의 서비스 이름(prism-gateway)으로 접속
+      - targets: ['prism-gateway:8000']
