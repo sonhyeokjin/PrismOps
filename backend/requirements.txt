@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+litellm
+python-dotenv
+prometheus-fastapi-instrumentator
+requests
+streamlit
+redis
+prometheus_client
+kafka-python
+pymongo
+prometheus-fastapi-instrumentator

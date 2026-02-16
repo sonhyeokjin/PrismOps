@@ -1,70 +1,130 @@
 services:
-  # 1. FastAPI Server
-  prism-app:
-    build: .
-    container_name: prism-gateway
+  # 1. Frontend
+  prism-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
-    env_file:
-      - .env
+      - "8501:8501"
     environment:
-      - OLLAMA_API_BASE=http://host.docker.internal:11434
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - BACKEND_URL=http://prism-gateway:8000
     depends_on:
-      - redis
+      - prism-gateway
     networks:
       - prism-network
 
+  # 2. Backend Gateway
+  prism-gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_HOST=prism-redis
+      # ★ 중요: 카프카 서비스 이름과 포트가 정확해야 합니다.
+      - KAFKA_BOOTSTRAP_SERVERS=prism-kafka:9092
+    depends_on:
+      - prism-redis
+      - prism-kafka
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - prism-network
 
-  # 2. 비동기 작업용 큐 (나중에 로그 저장용으로 사용)
-  redis:
+  # 3. Shadow Worker
+  prism-worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    environment:
+      # ★ 중요: 여기도 카프카 주소를 정확히 지정
+      - KAFKA_BOOTSTRAP_SERVERS=prism-kafka:9092
+      - MONGO_URI=mongodb://prism-mongo:27017
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    depends_on:
+      - prism-kafka
+      - prism-mongo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - prism-network
+
+  # 4. Redis
+  prism-redis:
     image: redis:alpine
-    container_name: prism-redis
     ports:
       - "6379:6379"
     networks:
       - prism-network
 
-  # 3. 데이터 수집기 (Prometheus)
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prism-prometheus
+  # 5. Kafka (Official Apache Image - KRaft Mode)
+  prism-kafka:
+    image: apache/kafka:3.7.0
+    ports:
+      - "9092:9092"
+    environment:
+      # 1. 역할 설정 (Broker + Controller)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # 2. 리스너 설정 (내부 통신용)
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      # ★ 중요: 내부 컨테이너(Worker)들이 접속할 주소
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://prism-kafka:9092
+
+      # 3. 보안 및 매핑
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@prism-kafka:9093
+
+      # 4. 개발 환경 최적화 (복제본 수 1로 설정하여 에러 방지)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      # 5. 데이터 저장 경로
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - prism-network
+
+  # No more Zookeeper(Kafka 4.x.x)
+
+  # 6. MongoDB
+  prism-mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - prism-network
+
+  # 7. Monitoring (Prometheus + Grafana)
+  prism-prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
-    volumes:
-      # 아까 만든 설정 파일을 컨테이너 안으로 연결(Mount)
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - prism-network
 
-  # 4. 데이터 시각화 (Grafana)
-  grafana:
-    image: grafana/grafana:latest
-    container_name: prism-grafana
+  prism-grafana:
+    image: grafana/grafana
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin # 초기 비번 설정
-    depends_on:
-      - prometheus
     networks:
       - prism-network
 
-  # 5. FrontEnd Service
-  prism-frontend:
-    build: .
-    container_name: prism-frontend
-    # 이미지가 켜지면 실행할 명령어
-    command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
-    ports:
-      - "8501:8501" # 웹 브라우저 접속 포트
-    depends_on:
-      - prism-app # 백엔드가 켜져야 나도 켜짐
-    networks:
-      - prism-network
-
-# 5. 전용 네트워크 생성 (이 안에서 서로 이름으로 통신함)
 networks:
   prism-network:
     driver: bridge
+
+volumes:
+  mongo_data:
+  kafka_data: # 카프카 데이터를 영구적으로 저장하기 위한 볼륨
