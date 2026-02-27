@@ -85,7 +85,7 @@ LLM Gateway &amp; A/B Testing Platform
 
 ### [Week 2] 킬링 포인트 및 운영(Ops) 고도화
 
-- **Day 5: Shadow Mode 구현 (🌟)**
+- **Day 5: Shadow Mode 구현**
     - 사용자에게는 Main 모델 결과만 반환.
     - 백그라운드 스레드에서 Shadow 모델 호출 및 결과 로깅.
     - Main vs Shadow 결과 비교(응답 속도 차이 등) 저장.
