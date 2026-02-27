@@ -16,23 +16,23 @@ LLM Gateway &amp; A/B Testing Platform
 
 ## 2. 핵심 기능 (Key Features)
 
-### ① Smart Routing (지능형 라우팅)
+### (1) Smart Routing (지능형 라우팅)
 
 - 사용자의 요청 복잡도나 길이를 분석하여 최적의 모델로 연결합니다.
 - **Logic:** 단순 인사/요약 ➔ **Local Llama 3 (무료)** / 복잡한 추론 ➔ **GPT-4o (유료)**
 
-### ② Shadow Mode (🌟 Killing Point)
+### (2) Shadow Mode (Killing Point)
 
 - **개념:** 운영 환경(Production)의 안정성을 해치지 않으면서 신규 모델을 테스트하는 고급 기술.
 - **동작:** 사용자의 요청을 메인 모델(A)로 보내 답변을 리턴하는 동시에, 백그라운드에서 몰래 테스트 모델(B)에도 똑같은 요청을 보냅니다.
 - **효과:** 사용자는 모델 B의 존재를 모르지만, 운영자는 모델 B가 실제 트래픽에서 잘 작동하는지(에러율, 속도) 데이터를 쌓을 수 있습니다.
 
-### ③ Traffic Splitting (A/B Testing)
+### (3) Traffic Splitting (A/B Testing)
 
 - 설정된 비율(예: 80:20)에 따라 트래픽을 분산시킵니다.
 - 신규 모델 도입 전, 일부 사용자에게만 노출하여 반응을 살피는 **Canary 배포**를 시뮬레이션합니다.
 
-### ④ Real-time Observability (실시간 관제)
+### (4) Real-time Observability (실시간 관제)
 
 - **Dashboard:** 처리량(TPS), 평균 응답 속도(Latency), 토큰 사용량(Cost), 에러율을 실시간 그래프로 시각화합니다.
 
@@ -53,7 +53,7 @@ LLM Gateway &amp; A/B Testing Platform
 | **Visualization** | **Grafana** | 수집된 데이터를 대시보드로 시각화 |
 | **Infra** | **Docker & Compose** | 모든 컴포넌트를 컨테이너로 묶어 원클릭 실행 구현 |
 
-### 🏗 Architecture Flow
+### Architecture Flow
 
 1. **Client:** API 요청 (`POST /v1/chat/completions`)
 2. **Prism Gateway (FastAPI):** 요청 수신 및 라우팅 로직 수행 (Shadow Mode 실행 여부 판단)
@@ -98,9 +98,7 @@ LLM Gateway &amp; A/B Testing Platform
 
 ---
 
-## 5. 기대 효과 및 어필 포인트 (Why Hire Me?)
-
-이 프로젝트를 완성하면 이력서에 다음과 같이 기술할 수 있습니다.
+## 5. 기대 효과
 
 > "LLM 운영 안정성을 위한 A/B 테스팅 및 Shadow Mode 게이트웨이 개발"
 > 
